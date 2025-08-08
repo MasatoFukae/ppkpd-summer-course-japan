@@ -1,0 +1,68 @@
+$PROB PPK model
+$INPUT ID DOSE CYCLE TIME DAY DVID DV MDV EVID AMT RATE DUR ADDL II
+
+$DATA /data/PPKPDseminar2025/ex1_v2/ex1_v2/01_data/pkpd01.csv IGNORE=@ IGNORE(DVID.EQ.2)
+
+$SUBROUTINES ADVAN3 TRANS4
+
+$PK
+TVCL = THETA(1)
+CL = TVCL * EXP(ETA(1)) ; (L/h) 
+
+TVV1 = THETA(2)
+V1 = TVV1 * EXP(ETA(2)) ; (L)
+
+TVQ = THETA(3)
+Q = TVQ * EXP(ETA(3)) ; (L/h) 
+
+TVV2 = THETA(4)
+V2 = TVV2 * EXP(ETA(4)) ; (L)
+
+S1 = V1
+S2 = V2
+ 
+K12 = Q/V1
+K21 = Q/V2
+K = CL/V1
+
+$ERROR
+IPRED = F
+IRES  = DV-IPRED
+W = SQRT(F*F*THETA(5)**2 + THETA(6)**2)
+IWRES = IRES/(W+1E-33)
+Y = IPRED + W*EPS(1)   
+
+$THETA
+(0, 0.02)     ; TVCL
+(0, 3)        ; TVV1
+(0, 0.05)     ; TVQ
+(0, 3)        ; TVV2
+(0, 0.1)      ; PROP_ERR
+(0 FIXED)     ; ADD_ERR
+
+$OMEGA
+0.1           ; IIV_CL
+0.1           ; IIV_V1
+0.1           ; IIV_Q
+0.1           ; IIV_V2
+
+$SIGMA
+1 FIXED              ; DUMMY
+
+$EST METHOD=1 INTER MAXEVAL=9999 PRINT=5 ETASTYPE=1
+
+$COV PRINT=E
+
+$TABLE
+ID DOSE CYCLE TIME DAY DVID MDV IPRED IWRES CWRES NPDE
+NOPRINT ONEHEADER ESAMPLE=1000
+FILE=sdtab000 FORMAT=,1PE15.8
+
+$TABLE
+ID DOSE CL V1 Q V2 ETAS(1:LAST)
+NOPRINT NOAPPEND ONEHEADER
+FILE=patab000 FORMAT=,1PE15.8
+
+;---------------------------------------------
+; THE END OF PROGRAM
+;---------------------------------------------
